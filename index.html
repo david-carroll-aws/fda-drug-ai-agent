@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>FDA Drug Intelligence Agent</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 100%;
+            margin: 40px auto;
+            padding: 0 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        h1 {
+            margin: 0 0 4px 0;
+            font-size: 22px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        p {
+            color: #8c9baf;
+            font-size: 13px;
+            margin: 0 0 16px 0;
+        }
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+            gap: 20px;
+            align-items: start;
+        }
+        @media (max-width: 800px) {
+            .layout { grid-template-columns: 1fr; }
+        }
+        .ask {
+            display: flex;
+            gap: 8px;
+        }
+        input {
+            flex: 1;
+            font-size: 16px;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid #334155;
+            background: #1e293b;
+            color: #e2e8f0;
+        }
+        button {
+            background: rgba(56, 189, 248, 0.15);
+            color: #38bdf8;
+            border: 1px solid rgba(56, 189, 248, 0.4);
+            border-radius: 6px;
+            padding: 10px 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        button:hover { background: rgba(56, 189, 248, 0.25); }
+        button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+        .examples button { padding: 6px 12px; font-size: 13px; font-weight: 500; }
+        #log { margin-top: 20px; }
+        .qa {
+            background: #1e293b;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+        .q {
+            color: #38bdf8;
+            font-weight: 600;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #334155;
+            white-space: pre-wrap;
+        }
+        .a {
+            white-space: pre-wrap;
+            line-height: 1.55;
+        }
+        .a.loading {
+            animation: thinking-pulse 1.4s ease-in-out infinite;
+        }
+        @keyframes thinking-pulse {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: 0.35; }
+        }
+
+        /* Decision trail panel */
+        .trail-panel {
+            background: #111c33;
+            border: 1px solid #334155;
+            border-radius: 8px;
+            padding: 16px;
+        }
+        .trail-panel h2 {
+            margin: 0 0 4px 0;
+            font-size: 15px;
+            color: #ffffff;
+        }
+        .trail-panel .hint { margin-bottom: 12px; }
+        details {
+            background: #1e293b;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+        summary {
+            cursor: pointer;
+            padding: 10px 12px;
+            font-size: 13px;
+            color: #e2e8f0;
+            list-style: none;
+        }
+        summary::-webkit-details-marker { display: none; }
+        summary::before {
+            content: "▸ ";
+            color: #38bdf8;
+        }
+        details[open] > summary::before { content: "▾ "; }
+        .badge-none { color: #f87171; font-weight: 600; }
+        .badge-tools { color: #4ade80; font-weight: 600; }
+        .step {
+            padding: 8px 12px 12px 12px;
+            border-top: 1px solid #334155;
+            font-size: 13px;
+        }
+        .tool-name {
+            color: #4ade80;
+            font-weight: 600;
+            font-family: ui-monospace, monospace;
+        }
+        .searched {
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 2px;
+        }
+        .no-tool {
+            color: #8c9baf;
+            font-style: italic;
+        }
+
+        /* Readable tool results */
+        .readable {
+            margin-top: 10px;
+            line-height: 1.5;
+        }
+        .readable .meta {
+            color: #cbd5e1;
+            margin-bottom: 8px;
+        }
+        .readable .meta strong { color: #ffffff; }
+        .readable .note {
+            color: #94a3b8;
+            font-size: 12px;
+            font-style: italic;
+            margin-bottom: 8px;
+        }
+        .readable .empty {
+            color: #fbbf24;
+        }
+        .section {
+            margin-bottom: 8px;
+        }
+        .section-title {
+            color: #38bdf8;
+            font-weight: 600;
+            font-size: 12px;
+        }
+        .section-text {
+            color: #cbd5e1;
+            font-size: 12px;
+        }
+        .reaction {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            gap: 2px 8px;
+            margin-bottom: 6px;
+            font-size: 12px;
+        }
+        .reaction .count { color: #94a3b8; text-align: right; }
+        .bar-track {
+            grid-column: 1 / -1;
+            height: 6px;
+            background: #0f172a;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .bar-fill {
+            height: 100%;
+            background: #38bdf8;
+            border-radius: 3px;
+        }
+        .card {
+            background: #0f172a;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin-bottom: 6px;
+            font-size: 12px;
+            color: #cbd5e1;
+        }
+        .card .top {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 4px;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .class-tag {
+            font-size: 11px;
+            padding: 1px 6px;
+            border-radius: 3px;
+            white-space: nowrap;
+        }
+        .class-I   { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+        .class-II  { background: rgba(251, 191, 36, 0.2);  color: #fbbf24; }
+        .class-III { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; }
+
+        /* Raw JSON, tucked away */
+        details.raw {
+            margin-top: 8px;
+            background: transparent;
+        }
+        details.raw summary {
+            padding: 4px 0;
+            font-size: 12px;
+            color: #38bdf8;
+            text-decoration: underline;
+        }
+        details.raw summary::before { content: ""; }
+        .json {
+            background: #0f172a;
+            border-radius: 4px;
+            padding: 8px;
+            font-family: ui-monospace, monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            color: #cbd5e1;
+        }
+    </style>
+</head>
+<body>
+    <h1>FDA Drug Intelligence Agent</h1>
+    <p>Ask about a drug's uses, dosage, warnings, side effects, recalls or approval. Answers come from openFDA data. Not medical advice.</p>
+
+    <div class="layout">
+        <main>
+            <div class="ask">
+                <input id="msg" type="text" placeholder="e.g. What are the warnings for ibuprofen?">
+                <button id="sendBtn" onclick="send()">Send</button>
+            </div>
+            <div class="examples">
+                <button onclick="ask('What are the warnings for ibuprofen?')">Ibuprofen warnings</button>
+                <button onclick="ask('What side effects have people reported with ibuprofen?')">Reported side effects</button>
+                <button onclick="ask('Have there been any recalls for ibuprofen?')">Recalls</button>
+                <button onclick="ask('When was Erbitux approved and who makes it?')">Erbitux approval</button>
+                <button onclick="ask('What are the official warnings for ibuprofen, and what side effects have people actually reported?')">Two tools at once</button>
+                <button onclick="ask('Who makes Big Macs?')">No tool needed</button>
+            </div>
+            <div id="log"></div>
+        </main>
+
+        <aside class="trail-panel">
+            <h2>Decision trail</h2>
+            <p class="hint">Which tools the agent chose, what it searched for, and what the FDA sent back.</p>
+            <div id="trail"></div>
+        </aside>
+    </div>
+
+    <script>
+        const MAX_HISTORY = 10;
+        let busy = false;
+
+        async function send() {
+            if (busy) return;
+            const input = document.getElementById("msg");
+            const log = document.getElementById("log");
+            const message = input.value.trim();
+            if (!message) return;
+
+            const qa = document.createElement("div");
+            qa.className = "qa";
+            qa.innerHTML = `
+                <div class="q">${escapeHtml(message)}</div>
+                <div class="a loading">Thinking…</div>
+            `;
+
+            log.insertBefore(qa, log.firstChild);
+            while (log.children.length > MAX_HISTORY) {
+                log.removeChild(log.lastChild);
+            }
+
+            const answerEl = qa.querySelector(".a");
+            setBusy(true);
+
+            try {
+                const res = await fetch("/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message })
+                });
+                const data = await res.json();
+                answerEl.textContent = data.reply || data.error || "No response";
+                answerEl.classList.remove("loading");
+                addTrail(message, data.trail || []);
+                input.value = "";
+            } catch (err) {
+                answerEl.textContent = "Error: " + err.message;
+                answerEl.classList.remove("loading");
+            } finally {
+                setBusy(false);
+            }
+        }
+
+        // Block every button while an answer is loading, so clicks can't overlap
+        function setBusy(on) {
+            busy = on;
+            document.querySelectorAll("main button").forEach(b => b.disabled = on);
+        }
+
+        function ask(q) {
+            document.getElementById("msg").value = q;
+            send();
+        }
+
+        function addTrail(question, trail) {
+            const panel = document.getElementById("trail");
+            panel.querySelectorAll(":scope > details").forEach(d => d.open = false);
+
+            const entry = document.createElement("details");
+            entry.open = true;
+
+            const count = trail.length;
+            const label = count === 0
+                ? "No tool used"
+                : `${count} tool call${count > 1 ? "s" : ""}`;
+            const badge = count === 0 ? "badge-none" : "badge-tools";
+
+            let body;
+            if (count === 0) {
+                body = `<div class="step no-tool">The model answered without calling a tool.</div>`;
+            } else {
+                body = trail.map((step, i) => `
+                    <div class="step">
+                        <div>Step ${i + 1}: <span class="tool-name">${escapeHtml(step.tool)}</span></div>
+                        <div class="searched">Searched for: ${escapeHtml(searchedFor(step.args))}</div>
+                        <div class="readable">${renderResult(step.tool, step.result)}</div>
+                        <details class="raw">
+                            <summary>View raw FDA data</summary>
+                            <div class="json">${escapeHtml(JSON.stringify(step.result, null, 2))}</div>
+                        </details>
+                    </div>
+                `).join("");
+            }
+
+            entry.innerHTML = `
+                <summary>${escapeHtml(truncate(question, 40))} · <span class="${badge}">${label}</span></summary>
+                ${body}
+            `;
+
+            panel.insertBefore(entry, panel.firstChild);
+            while (panel.children.length > MAX_HISTORY) {
+                panel.removeChild(panel.lastChild);
+            }
+        }
+
+        function searchedFor(args) {
+            if (!args) return "";
+            if (args.drug_name) return args.drug_name;
+            if (args.args) return args.args.join(", ");
+            return JSON.stringify(args);
+        }
+
+        // Turn each tool's JSON into something a person can read
+        function renderResult(tool, r) {
+            if (!r) return `<div class="empty">No result came back.</div>`;
+            if (r.found === false) {
+                return `<div class="empty">${escapeHtml(r.message || r.error || "Nothing found.")}</div>`;
+            }
+            switch (tool) {
+                case "get_drug_label":      return renderLabel(r);
+                case "get_adverse_events":  return renderAdverse(r);
+                case "get_drug_recalls":    return renderRecalls(r);
+                case "get_drug_approvals":  return renderApprovals(r);
+                default:                    return `<div class="note">No readable view for this tool yet.</div>`;
+            }
+        }
+
+        function renderLabel(r) {
+            const sections = [
+                ["boxed_warning", "Boxed warning"],
+                ["indications_and_usage", "What it's for"],
+                ["dosage_and_administration", "Dosage"],
+                ["warnings", "Warnings"],
+                ["contraindications", "Don't use if"],
+                ["adverse_reactions", "Side effects"],
+            ];
+            const meta = `
+                <div class="meta">
+                    <strong>${escapeHtml(first(r.brand_name) || r.drug)}</strong>
+                    ${first(r.generic_name) ? `(${escapeHtml(first(r.generic_name))})` : ""}
+                    ${first(r.manufacturer) ? `<br>Made by ${escapeHtml(first(r.manufacturer))}` : ""}
+                </div>`;
+            const body = sections
+                .filter(([key]) => r[key])
+                .map(([key, title]) => `
+                    <div class="section">
+                        <div class="section-title">${title}</div>
+                        <div class="section-text">${escapeHtml(truncate(r[key], 220))}</div>
+                    </div>`)
+                .join("");
+            return meta + (body || `<div class="note">The label had none of the usual sections.</div>`);
+        }
+
+        function renderAdverse(r) {
+            const list = r.top_reported_reactions || [];
+            if (!list.length) return `<div class="empty">No reactions reported.</div>`;
+            const max = Math.max(...list.map(x => x.reports));
+            const rows = list.map(x => `
+                <div class="reaction">
+                    <span>${escapeHtml(x.reaction)}</span>
+                    <span class="count">${x.reports.toLocaleString()}</span>
+                    <div class="bar-track"><div class="bar-fill" style="width:${(x.reports / max * 100).toFixed(1)}%"></div></div>
+                </div>`).join("");
+            return `<div class="note">${escapeHtml(r.note || "")}</div>${rows}`;
+        }
+
+        function renderRecalls(r) {
+            const list = r.recalls || [];
+            if (!list.length) return `<div class="empty">No recalls on record.</div>`;
+            return list.map(x => {
+                const cls = (x.classification || "").replace("Class ", "");
+                return `
+                <div class="card">
+                    <div class="top">
+                        <span>${formatDate(x.date)}</span>
+                        ${cls ? `<span class="class-tag class-${escapeHtml(cls)}">Class ${escapeHtml(cls)}</span>` : ""}
+                    </div>
+                    <div>${escapeHtml(x.firm || "Unknown firm")}${x.status ? `, ${escapeHtml(x.status.toLowerCase())}` : ""}</div>
+                    <div style="margin-top:4px">${escapeHtml(truncate(x.reason || "", 200))}</div>
+                </div>`;
+            }).join("");
+        }
+
+        function renderApprovals(r) {
+            const list = r.applications || [];
+            if (!list.length) return `<div class="empty">No approval records.</div>`;
+            return list.map(a => {
+                const products = (a.products || [])
+                    .map(p => [p.brand_name, p.dosage_form, p.marketing_status].filter(Boolean).join(", "))
+                    .filter(Boolean);
+                return `
+                <div class="card">
+                    <div class="top">
+                        <span>${escapeHtml(a.sponsor || "Unknown sponsor")}</span>
+                        <span>${a.original_approval_date ? "Approved " + formatDate(a.original_approval_date) : ""}</span>
+                    </div>
+                    <div>Application ${escapeHtml(a.application_number || "n/a")}</div>
+                    ${products.length ? `<div style="margin-top:4px">${products.map(escapeHtml).join("<br>")}</div>` : ""}
+                </div>`;
+            }).join("");
+        }
+
+        // openFDA dates come as YYYYMMDD
+        function formatDate(d) {
+            if (!d || d.length !== 8) return escapeHtml(d || "No date");
+            const dt = new Date(`${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T00:00:00`);
+            return dt.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+        }
+
+        function first(arr) {
+            return Array.isArray(arr) && arr.length ? arr[0] : "";
+        }
+
+        function truncate(s, n) {
+            s = String(s);
+            return s.length > n ? s.slice(0, n) + "…" : s;
+        }
+
+        function escapeHtml(s) {
+            return String(s).replace(/[&<>"']/g, c => ({
+                "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+            }[c]));
+        }
+
+        document.getElementById("msg").addEventListener("keydown", e => {
+            if (e.key === "Enter") send();
+        });
+    </script>
+</body>
+</html>
