@@ -1,3 +1,4 @@
+import os
 import requests
 
 OPENFDA_LABEL_URL = "https://api.fda.gov/drug/label.json"
@@ -15,14 +16,12 @@ FIELDS = [
 def get_drug_label(drug_name: str, max_chars: int = 1500) -> dict:
     """Look up the FDA drug label for a brand or generic drug name."""
 
-    print("TOOL CALLED:", drug_name)
-    
     name = drug_name.strip().lower()
     query = f'openfda.brand_name:"{name}" OR openfda.generic_name:"{name}"'
     try:
         resp = requests.get(
             OPENFDA_LABEL_URL,
-            params={"search": query, "limit": 1},
+            params={"search": query, "limit": 1, "api_key": os.environ.get("OPENFDA_API_KEY")},
             timeout=10,
         )
         if resp.status_code == 404:

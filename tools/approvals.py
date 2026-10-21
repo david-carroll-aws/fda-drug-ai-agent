@@ -1,3 +1,4 @@
+import os
 import requests
 
 OPENFDA_APPROVAL_URL = "https://api.fda.gov/drug/drugsfda.json"
@@ -12,7 +13,7 @@ def get_drug_approvals(drug_name: str, limit: int = 3) -> dict:
     try:
         resp = requests.get(
             OPENFDA_APPROVAL_URL,
-            params={"search": query, "limit": limit},
+            params={"search": query, "limit": limit, "api_key": os.environ.get("OPENFDA_API_KEY")},
             timeout=15,
         )
         if resp.status_code == 404:

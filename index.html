@@ -62,6 +62,12 @@
             opacity: 0.4;
             cursor: not-allowed;
         }
+        .drug-picker { margin-bottom: 16px; }
+        .drug-picker .current { color: #cbd5e1; font-size: 14px; margin: 0 0 8px 0; }
+        .drug-picker .current strong { color: #4ade80; }
+        #drugs { display: flex; flex-wrap: wrap; gap: 6px; }
+        .drug-btn { padding: 4px 12px; font-size: 13px; font-weight: 500; border-radius: 999px; }
+        .drug-btn.active { background: rgba(74, 222, 128, 0.2); color: #4ade80; border-color: rgba(74, 222, 128, 0.5); }
         .examples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
         .examples button { padding: 6px 12px; font-size: 13px; font-weight: 500; }
         #log { margin-top: 20px; }
@@ -247,27 +253,31 @@
 </head>
 <body>
     <h1>FDA Drug Intelligence Agent</h1>
-    <p>Ask about a drug's uses, dosage, warnings, side effects, recalls or approval. Answers come from openFDA data. Not medical advice.</p>
+    <p>Pick a drug, or type any drug name, then ask a question. There are no routing rules: Gemini decides which FDA tools to call, or none at all, and the decision trail shows its choices live. Not medical advice.</p>
 
     <div class="layout">
         <main>
+            <div class="drug-picker">
+                <p class="current">Current drug: <strong id="current-drug">Tylenol</strong></p>
+                <div id="drugs"></div>
+            </div>
             <div class="ask">
-                <input id="msg" type="text" placeholder="e.g. What are the warnings for ibuprofen?">
+                <input id="msg" type="text" placeholder="Ask about the current drug, or name any drug">
                 <button id="sendBtn" onclick="send()">Send</button>
             </div>
             <div class="examples">
-                <button onclick="ask('What are the warnings for ibuprofen?')">Ibuprofen warnings</button>
-                <button onclick="ask('What side effects have people reported with ibuprofen?')">Reported side effects</button>
-                <button onclick="ask('Have there been any recalls for ibuprofen?')">Recalls</button>
-                <button onclick="ask('When was Erbitux approved and who makes it?')">Erbitux approval</button>
-                <button onclick="ask('What are the official warnings for ibuprofen, and what side effects have people actually reported?')">Two tools at once</button>
-                <button onclick="ask('Who makes Big Macs?')">No tool needed</button>
+                <button onclick="ask('What are the official warnings?')">Warnings</button>
+                <button onclick="ask('What side effects have people reported?')">Side effects</button>
+                <button onclick="ask('Have there been any recalls?')">Recalls</button>
+                <button onclick="ask('When was it approved and who makes it?')">Approval</button>
+                <button onclick="ask('What are the official warnings, and what side effects have people actually reported?')">Two tools at once</button>
+                <button onclick="ask('Is coffee bad for you?')">Coffee?</button>
             </div>
             <div id="log"></div>
         </main>
 
         <aside class="trail-panel">
-            <h2>Decision trail</h2>
+            <h2>Agent decision trail</h2>
             <p class="hint">Which tools the agent chose, what it searched for, and what the FDA sent back.</p>
             <div id="trail"></div>
         </aside>
@@ -276,6 +286,26 @@
     <script>
         const MAX_HISTORY = 10;
         let busy = false;
+        let currentDrug = "Tylenol";
+
+        const DRUGS = ["Tylenol", "Ibuprofen", "Lipitor", "Metformin", "Lisinopril",
+            "Amlodipine", "Levothyroxine", "Omeprazole", "Albuterol", "Gabapentin", "Erbitux"];
+
+        function setDrug(name) {
+            currentDrug = name;
+            document.getElementById("current-drug").textContent = name;
+            document.querySelectorAll(".drug-btn").forEach(b =>
+                b.classList.toggle("active", b.dataset.drug.toLowerCase() === name.toLowerCase()));
+        }
+
+        function renderDrugs() {
+            const box = document.getElementById("drugs");
+            box.innerHTML = DRUGS.map(d =>
+                `<button class="drug-btn" data-drug="${escapeHtml(d)}">${escapeHtml(d)}</button>`).join("");
+            box.querySelectorAll(".drug-btn").forEach(b =>
+                b.addEventListener("click", () => setDrug(b.dataset.drug)));
+            setDrug(currentDrug);
+        }
 
         async function send() {
             if (busy) return;
@@ -303,12 +333,17 @@
                 const res = await fetch("/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message })
+                    body: JSON.stringify({ message, drug: currentDrug })
                 });
                 const data = await res.json();
                 answerEl.textContent = data.reply || data.error || "No response";
                 answerEl.classList.remove("loading");
                 addTrail(message, data.trail || []);
+                const trail = data.trail || [];
+                if (trail.length) {
+                    const last = trail[trail.length - 1];
+                    if (last.args && last.args.drug_name) setDrug(last.args.drug_name);
+                }
                 input.value = "";
             } catch (err) {
                 answerEl.textContent = "Error: " + err.message;
@@ -453,7 +488,7 @@
             if (!list.length) return `<div class="empty">No approval records.</div>`;
             return list.map(a => {
                 const products = (a.products || [])
-                    .map(p => [p.brand_name, p.dosage_form, p.marketing_status].filter(Boolean).join(", "))
+                    .map(p => [p.brand_name, p.dosage_form, p.strength, p.marketing_status].filter(Boolean).join(", "))
                     .filter(Boolean);
                 return `
                 <div class="card">
@@ -488,6 +523,8 @@
                 "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
             }[c]));
         }
+
+        renderDrugs();
 
         document.getElementById("msg").addEventListener("keydown", e => {
             if (e.key === "Enter") send();

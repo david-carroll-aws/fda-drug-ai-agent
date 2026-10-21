@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from google import genai
@@ -39,7 +42,7 @@ def logged(fn):
         entry["result"] = result
         return result
     return wrapper
-    
+
 TOOLS = [logged(get_drug_label), logged(get_adverse_events), logged(get_drug_recalls), logged(get_drug_approvals)]
 
 
@@ -97,10 +100,20 @@ def chat_endpoint():
         CALL_LOG.clear()
         global _chat
         _chat = None
+        drug = request.json.get("drug")
+        if drug:
+            message = (f"(Drug under discussion: {drug}. If this question is a "
+            f"follow-up without a drug name, it refers to this drug.)\n{message}")
         response = get_chat().send_message(message)
         return jsonify(reply=response.text, trail=list(CALL_LOG))
     except Exception as e:
-        return jsonify(error=str(e)), 500
+        msg = str(e)
+        if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+            return jsonify(
+                reply="The AI is getting a lot of requests right now. Please wait a minute and try again.",
+                trail=list(CALL_LOG),
+            ), 429
+        return jsonify(error="Something went wrong. Please try again."), 500
 
 
 @app.get("/models")

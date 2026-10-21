@@ -1,3 +1,4 @@
+import os
 import requests
 
 OPENFDA_RECALL_URL = "https://api.fda.gov/drug/enforcement.json"
@@ -14,7 +15,7 @@ def get_drug_recalls(drug_name: str, limit: int = 5) -> dict:
     try:
         resp = requests.get(
             OPENFDA_RECALL_URL,
-            params={"search": query, "sort": "report_date:desc", "limit": limit},
+            params={"search": query, "sort": "report_date:desc", "limit": limit, "api_key": os.environ.get("OPENFDA_API_KEY")},
             timeout=15,
         )
         if resp.status_code == 404:

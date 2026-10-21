@@ -1,3 +1,4 @@
+import os
 import requests
 
 OPENFDA_EVENT_URL = "https://api.fda.gov/drug/event.json"
@@ -19,6 +20,7 @@ def get_adverse_events(drug_name: str, top_n: int = 10) -> dict:
                 "search": query,
                 "count": "patient.reaction.reactionmeddrapt.exact",
                 "limit": top_n,
+                "api_key": os.environ.get("OPENFDA_API_KEY"),
             },
             timeout=15,
         )
