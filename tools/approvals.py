@@ -5,7 +5,7 @@ OPENFDA_APPROVAL_URL = "https://api.fda.gov/drug/drugsfda.json"
 
 
 def get_drug_approvals(drug_name: str, limit: int = 3) -> dict:
-    """Get FDA approval history for a drug: who makes it, when it was first
+    """Get FDA approval history for a drug: who makes it, when it was first//
     approved, and its forms and marketing status. Use this when the user asks
     when a drug was approved, who makes it, or whether it is prescription or OTC."""
     name = drug_name.strip().lower()
