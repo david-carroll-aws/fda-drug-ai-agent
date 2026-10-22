@@ -258,7 +258,7 @@
     <div class="layout">
         <main>
             <div class="drug-picker">
-                <p class="current">Current drug: <strong id="current-drug">Tylenol</strong></p>
+                <p class="current"><span style="color:#888">Quick picks, or choose any other drug.</span>&nbsp;&nbsp;&nbsp; Current drug: <strong id="current-drug">Tylenol</strong></p>
                 <div id="drugs"></div>
             </div>
             <div class="ask">
@@ -291,11 +291,21 @@
         const DRUGS = ["Tylenol", "Ibuprofen", "Lipitor", "Metformin", "Lisinopril",
             "Amlodipine", "Levothyroxine", "Omeprazole", "Albuterol", "Gabapentin", "Erbitux"];
 
+        const QUESTIONS = [
+        "What are the warnings for {d}?",
+        "Any recalls for {d}?",
+        "What side effects have people reported with {d}?",
+        "When was {d} approved?",
+        "Can I take {d} with alcohol?"
+        ];
+
         function setDrug(name) {
             currentDrug = name;
             document.getElementById("current-drug").textContent = name;
             document.querySelectorAll(".drug-btn").forEach(b =>
                 b.classList.toggle("active", b.dataset.drug.toLowerCase() === name.toLowerCase()));
+            const box = document.getElementById("msg");
+            if (box) box.placeholder = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)].replace("{d}", name);
         }
 
         function renderDrugs() {
@@ -311,7 +321,7 @@
             if (busy) return;
             const input = document.getElementById("msg");
             const log = document.getElementById("log");
-            const message = input.value.trim();
+            const message = input.value.trim() || input.placeholder;
             if (!message) return;
 
             const qa = document.createElement("div");
