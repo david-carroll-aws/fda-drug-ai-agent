@@ -1,6 +1,6 @@
 # FDA Drug AI Agent
 
-A tool-calling AI agent that answers plain-English questions about medicines using live data from the FDA's public openFDA API: drug labels, reported side effects, recalls and approvals. Every answer comes with an **Agent decision trail** showing which tools the agent chose, what it searched for, and exactly what the FDA sent back.
+A tool-calling AI agent that answers plain-English questions about medicines using live data from the FDA's public openFDA API: drug labels, reported side effects, recalls, approvals and interactions. Every answer comes with an **Agent decision trail** showing which tools the agent chose, what it searched for, and exactly what the FDA sent back.
 
 **Stack:** Python, Flask, Gemini on Vertex AI (Google GenAI SDK), openFDA, Google Cloud Run.
 
@@ -22,7 +22,8 @@ The decision trail makes those choices visible. Some examples from testing:
 |---|---|
 | "Have there been any recalls?" (Lipitor selected) | Called the recalls tool only, for Lipitor |
 | "What are the official warnings, and what side effects have people actually reported?" | Called two tools: label and adverse events |
-| Just the word "Tylenol" | Decided on its own to call all four tools |
+| Just the word "Tylenol" | Decided on its own to call four tools at once |
+| "Can I take it with grapefruit?" (Lipitor selected) | Called the interactions tool only, for Lipitor |
 | "Is coffee bad for you?" | Called no tools and explained it only covers FDA-regulated drugs |
 
 ---
@@ -42,7 +43,7 @@ flowchart LR
 ```
 
 1. The browser sends the question plus the **current drug**, the only state carried between questions.
-2. Flask passes the question to Gemini along with the four tool functions. The SDK turns each function's signature and docstring into a tool definition the model can see.
+2. Flask passes the question to Gemini along with the five tool functions. The SDK turns each function's signature and docstring into a tool definition the model can see.
 3. Gemini decides which tools to call. Each call is wrapped by a small `logged` decorator that records the tool name, arguments and result.
 4. Flask returns the answer and the recorded calls, and the page renders them as the decision trail.
 
@@ -56,6 +57,7 @@ flowchart LR
 | `get_adverse_events` | `/drug/event.json` | Most-reported side effects, with counts |
 | `get_drug_recalls` | `/drug/enforcement.json` | Recall history: date, class, firm, reason |
 | `get_drug_approvals` | `/drug/drugsfda.json` | Original approval date, sponsor, products and strengths |
+| `get_drug_interactions` | `/drug/label.json` | Drugs, foods and drinks to avoid combining it with |
 
 Each tool is a plain Python function in `tools/`. Its docstring tells the model when to use it.
 
@@ -66,6 +68,8 @@ Each tool is a plain Python function in `tools/`. Its docstring tells the model 
 **Only the drug name is kept as state.** The model itself is stateless, so "memory" means resending context with each request. Resending the full conversation made a small model answer from earlier replies instead of calling tools. Now each question starts a fresh chat and carries only the current drug, so follow-ups like "any recalls?" still work, and every answer is grounded in a new tool call.
 
 **The decision trail is logged at the tool, not read from model history.** Wrapping each tool in a `logged` decorator records exactly what ran, independently of what the SDK chooses to expose.
+
+**Docstrings steer tool choice.** The label and interactions tools both read the drug label, so at first the agent answered grapefruit questions with the general label tool. One sentence in each docstring, telling the model which tool owns interaction questions, fixed it, with no routing code.
 
 **Readable results first, raw JSON second.** The trail renders each tool's output in plain form (reaction bars, colour-coded recall classes, approval cards), with the raw FDA response one click away.
 
@@ -90,7 +94,7 @@ Each tool is a plain Python function in `tools/`. Its docstring tells the model 
 ## Running locally
 
 ```bash
-git clone https://github.com/<your-username>/fda-drug-ai-agent.git
+git clone https://github.com/david-carroll-aws/fda-drug-ai-agent.git
 cd fda-drug-ai-agent
 pip install -r requirements.txt
 ```
