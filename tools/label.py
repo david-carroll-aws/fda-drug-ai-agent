@@ -14,7 +14,7 @@ FIELDS = [
 
 
 def get_drug_label(drug_name: str, max_chars: int = 1500) -> dict:
-    """Look up the FDA drug label for a brand or generic drug name."""
+    """Look up the FDA drug label for a brand or generic drug name. For questions about combining drugs, food or drink, use get_drug_interactions instead."""
 
     name = drug_name.strip().lower()
     query = f'openfda.brand_name:"{name}" OR openfda.generic_name:"{name}"'

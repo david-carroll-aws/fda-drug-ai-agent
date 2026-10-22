@@ -10,6 +10,7 @@ from tools.label import get_drug_label
 from tools.adverse_events import get_adverse_events
 from tools.recalls import get_drug_recalls
 from tools.approvals import get_drug_approvals
+from tools.interactions import get_drug_interactions
 
 app = Flask(__name__)
 CORS(app)
@@ -43,8 +44,7 @@ def logged(fn):
         return result
     return wrapper
 
-TOOLS = [logged(get_drug_label), logged(get_adverse_events), logged(get_drug_recalls), logged(get_drug_approvals)]
-
+TOOLS = [logged(get_drug_label), logged(get_adverse_events), logged(get_drug_recalls), logged(get_drug_approvals), logged(get_drug_interactions)]
 
 def get_client():
     global _client
