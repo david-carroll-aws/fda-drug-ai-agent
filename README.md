@@ -1,3 +1,4 @@
+
 # FDA Drug AI Agent
 
 **[View it live here](https://fda-drug-ai-agent-988398630438.us-east1.run.app/)**
@@ -5,7 +6,7 @@
 You can view the application from my website, [davidcarroll.cloud](https://davidcarroll.cloud), or directly on the Google Cloud Run server at the link above.
 
 <!-- Demo video placeholder: replace PASTE_VIDEO_LINK_HERE with your short video link -->
-[Watch the demo video](PASTE_VIDEO_LINK_HERE)
+[[Watch the demo video](PASTE_VIDEO_LINK_HERE)](https://github.com/user-attachments/assets/0ea1ff6f-09ab-4da5-ad40-53969c440371)
 
 ---
 
