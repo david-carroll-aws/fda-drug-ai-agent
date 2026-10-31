@@ -1,4 +1,6 @@
+import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from flask import Flask, request, jsonify, send_file
@@ -11,6 +13,7 @@ from tools.adverse_events import get_adverse_events
 from tools.recalls import get_drug_recalls
 from tools.approvals import get_drug_approvals
 from tools.interactions import get_drug_interactions
+from tools.label_search import search_label_passages
 
 app = Flask(__name__)
 CORS(app)
@@ -23,7 +26,9 @@ SYSTEM_INSTRUCTION = (
     "For any question that names a drug, you must use your tools and never answer from memory. "
     "Pick only the tool or tools the question actually needs: "
     "labels for uses, dosage and warnings; adverse events for reported side effects; "
-    "recalls for recall history; approvals for approval dates, makers and marketing status. "
+    "recalls for recall history; approvals for approval dates, makers and marketing status; "
+    "label passage search for open-ended questions about what a drug label says, such as "
+    "food, alcohol, pregnancy or other specific situations. "
     "Base your answer only on what the tools return. If a tool finds nothing, say so plainly. "
     "Give a complete answer in 3 to 5 sentences of plain prose, without markdown. "
     "Remind the user this is not medical advice when you give dosage or safety information."
@@ -44,7 +49,7 @@ def logged(fn):
         return result
     return wrapper
 
-TOOLS = [logged(get_drug_label), logged(get_adverse_events), logged(get_drug_recalls), logged(get_drug_approvals), logged(get_drug_interactions)]
+TOOLS = [logged(get_drug_label), logged(get_adverse_events), logged(get_drug_recalls), logged(get_drug_approvals), logged(get_drug_interactions), logged(search_label_passages)]
 
 def get_client():
     global _client
@@ -149,4 +154,5 @@ def list_models():
 
 
 if __name__ == "__main__":
-    app.run(port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

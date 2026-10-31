@@ -4,3 +4,6 @@ gunicorn
 google-genai
 requests
 python-dotenv
+pymongo
+sentence-transformers
+certifi

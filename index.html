@@ -7,7 +7,7 @@
     <style>
         body {
             font-family: system-ui, sans-serif;
-            max-width: 100%;
+            max-width: 900px;
             margin: 40px auto;
             padding: 0 20px;
             background: #0f172a;
@@ -26,7 +26,7 @@
         }
         .layout {
             display: grid;
-            grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+            grid-template-columns: minmax(0, 1fr);
             gap: 20px;
             align-items: start;
         }
@@ -39,7 +39,8 @@
         }
         input {
             flex: 1;
-            font-size: 16px;
+            font-size: 14px;
+            font-weight: 400;
             padding: 10px 14px;
             border-radius: 6px;
             border: 1px solid #334155;
@@ -87,7 +88,8 @@
         }
         .a {
             white-space: pre-wrap;
-            line-height: 1.55;
+            line-height: 1.4;
+            font-size: 0.88rem;
         }
         .a.loading {
             animation: thinking-pulse 1.4s ease-in-out infinite;
@@ -129,7 +131,7 @@
             color: #38bdf8;
         }
         details[open] > summary::before { content: "▾ "; }
-        .badge-none { color: #f87171; font-weight: 600; }
+        .badge-none { color: #f87171; font-weight: 400; font-size: 12px; }
         .badge-tools { color: #4ade80; font-weight: 600; }
         .step {
             padding: 8px 12px 12px 12px;
@@ -249,11 +251,92 @@
             white-space: pre-wrap;
             color: #cbd5e1;
         }
+        /* Answer + sources inside each card */
+        .q { display: flex; justify-content: space-between; gap: 12px; }
+        .drug-tag {
+            background: rgba(74, 222, 128, 0.15); color: #4ade80; border-radius: 999px;
+            padding: 2px 10px; font-size: 12px; white-space: nowrap; align-self: start;
+        }
+        .a { background: #0f172a; border-left: 3px solid #38bdf8; border-radius: 6px; padding: 8px 12px; }
+        .a::before {
+            content: "AI answer"; display: block; color: #38bdf8;
+            font-size: 11px; font-weight: 600; margin-bottom: 3px;
+        }
+        .src-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 12px; }
+        .src-label { color: #94a3b8; font-size: 12px; font-weight: 600; }
+        .chip {
+            background: #0f172a; border: 1px solid #334155; border-radius: 999px;
+            padding: 2px 10px; font-size: 12px; color: #cbd5e1;
+        }
+        .chip.semantic { border-color: rgba(167, 139, 250, 0.6); color: #c4b5fd; }
+        details.how { margin-top: 10px; background: transparent; }
+        details.how > summary { color: #38bdf8; font-size: 12px; padding: 4px 0; }
+        /* Tool colour coding: button colour = chip colour */
+        .t-label        { --rgb: 250, 204, 21; }
+        .t-adverse      { --rgb: 251, 146, 60; }
+        .t-recalls      { --rgb: 248, 113, 113; }
+        .t-approvals    { --rgb: 163, 230, 53; }
+        .t-interactions { --rgb: 244, 114, 182; }
+        .examples button.tool-btn {
+            background: rgba(var(--rgb), 0.15);
+            color: rgb(var(--rgb));
+            border-color: rgba(var(--rgb), 0.5);
+        }
+        .examples button.tool-btn:hover { background: rgba(var(--rgb), 0.3); }
+        .chip.tool-chip {
+            background: rgba(var(--rgb), 0.15);
+            color: rgb(var(--rgb));
+            border-color: rgba(var(--rgb), 0.6);
+        }
+        .tool-name.tool-chip { background: none; border: none; padding: 0; }
+        .examples .divider {
+            align-self: center;
+            color: #475569;
+            letter-spacing: 1px;
+            font-size: 13px;
+            line-height: 1;
+            user-select: none;
+        }
+        .drug-hl { color: #4ade80; font-weight: 600; }
+        /* Accordion cards: the question is the title */
+        details.qa { padding: 0; overflow: hidden; }
+        details.qa > summary.q {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 14px;
+            margin: 0;
+            border-bottom: none;
+            cursor: pointer;
+            color: #38bdf8;
+            font-weight: 400;
+            font-size: 0.85rem;
+        }
+        details.qa > summary.q::before { content: ""; }
+        details.qa > summary.q .q-text { flex: 1; min-width: 0; white-space: pre-wrap; }
+        details.qa > summary.q .chev { color: #38bdf8; font-size: 12px; transition: transform 0.15s; }
+        details.qa[open] > summary.q .chev { transform: rotate(90deg); }
+        details.qa[open] > summary.q { border-bottom: 1px solid #334155; }
+        details.qa > .a, details.qa > .sources { margin: 10px 14px 0 14px; }
+        details.qa > .sources { margin-bottom: 16px; }
+        details.qa > .a:last-child { margin-bottom: 16px; }
+        details.qa > summary.q .q-chips {
+            display: flex; flex-wrap: nowrap; gap: 4px; flex-shrink: 1; min-width: 0; overflow: hidden;
+        }
+        details.qa > summary.q .q-chips:empty { display: none; }
+        details.qa > summary.q .chip.mini {
+            font-size: 11px; font-weight: 500; padding: 1px 8px; white-space: nowrap;
+            max-width: 110px; overflow: hidden; text-overflow: ellipsis;
+        }
+        details.qa > summary.q .drug-tag { flex-shrink: 0; }
+        @media (max-width: 700px) { details.qa > summary.q .q-chips { display: none; } }
+        .disclaimer { margin-top: 16px; text-align: center; font-size: 12px; }
     </style>
 </head>
 <body>
     <h1>FDA Drug Intelligence Agent</h1>
-    <p>Pick a drug, or type any drug name, then ask a question. There are no routing rules: Gemini decides which FDA tools to call, or none at all, and the decision trail shows its choices live. Not medical advice.</p>
+    <p>Pick a drug, or type any drug name, then ask a question. There are no routing rules: Gemini decides which FDA tools to call, or none at all, and each answer lists the sources it used. Not medical advice.</p>
 
     <div class="layout">
         <main>
@@ -266,21 +349,18 @@
                 <button id="sendBtn" onclick="send()">Send</button>
             </div>
             <div class="examples">
-                <button onclick="ask('What are the official warnings?')">Warnings</button>
-                <button onclick="ask('What side effects have people reported?')">Side effects</button>
-                <button onclick="ask('Have there been any recalls?')">Recalls</button>
-                <button onclick="ask('When was it approved and who makes it?')">Approval</button>
-                <button onclick="ask('What are the official warnings, and what side effects have people actually reported?')">Two tools at once</button>
-                <button onclick="ask('Is coffee bad for you?')">Coffee?</button>
+                <button class="tool-btn t-label" onclick="fill('What are the official warnings?')">Warnings</button>
+                <button class="tool-btn t-adverse" onclick="fill('What side effects have people reported?')">Side effects</button>
+                <button class="tool-btn t-recalls" onclick="fill('Have there been any recalls?')">Recalls</button>
+                <button class="tool-btn t-approvals" onclick="fill('When was it approved and who makes it?')">Approval</button>
+                <button class="tool-btn t-interactions" onclick="fill('What drug interactions should I know about?')">Interactions</button>
+                <span class="divider">•••</span>
+                <button onclick="fill('What are the official warnings, and what side effects have people actually reported?')">Two tools at once</button>
+                <button onclick="fill('Is coffee bad for you?')">Coffee?</button>
             </div>
             <div id="log"></div>
+            <p class="disclaimer">Demo only. Not medical advice.</p>
         </main>
-
-        <aside class="trail-panel">
-            <h2>Agent decision trail</h2>
-            <p class="hint">Which tools the agent chose, what it searched for, and what the FDA sent back.</p>
-            <div id="trail"></div>
-        </aside>
     </div>
 
     <script>
@@ -288,8 +368,29 @@
         let busy = false;
         let currentDrug = "Tylenol";
 
-        const DRUGS = ["Tylenol", "Ibuprofen", "Lipitor", "Metformin", "Lisinopril",
-            "Amlodipine", "Levothyroxine", "Omeprazole", "Albuterol", "Gabapentin", "Erbitux"];
+        const TOOL_LABELS = {
+            get_drug_label: "FDA label",
+            get_adverse_events: "FDA adverse events",
+            get_drug_recalls: "FDA recalls",
+            get_drug_approvals: "FDA approvals",
+            get_drug_interactions: "FDA interactions",
+            search_label_passages: "Label search (semantic)"
+        };
+
+        const TOOL_CLASS = {
+            get_drug_label: "t-label",
+            get_adverse_events: "t-adverse",
+            get_drug_recalls: "t-recalls",
+            get_drug_approvals: "t-approvals",
+            get_drug_interactions: "t-interactions"
+        };
+        function toolClass(tool) {
+            return TOOL_CLASS[tool] ? `tool-chip ${TOOL_CLASS[tool]}` : "";
+        }
+
+        const DRUGS = ["Tylenol", "Ibuprofen", "Lipitor", "Ozempic", "Metformin", "Lisinopril",
+            "Amlodipine", "Levothyroxine", "Omeprazole", "Albuterol", "Gabapentin",
+            "Aspirin", "Sertraline", "Losartan", "Metoprolol", "Prednisone", "Amoxicillin", "Simvastatin", "Warfarin", "Erbitux"];
 
         const QUESTIONS = [
         "What are the warnings for {d}?",
@@ -301,11 +402,13 @@
 
         function setDrug(name) {
             currentDrug = name;
-            document.getElementById("current-drug").textContent = name;
+            document.getElementById("current-drug").textContent = name || "None selected";
             document.querySelectorAll(".drug-btn").forEach(b =>
                 b.classList.toggle("active", b.dataset.drug.toLowerCase() === name.toLowerCase()));
             const box = document.getElementById("msg");
-            if (box) box.placeholder = QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)].replace("{d}", name);
+            if (box) box.placeholder = name
+                ? QUESTIONS[Math.floor(Math.random() * QUESTIONS.length)].replace("{d}", name)
+                : "Name any drug and ask a question";
         }
 
         function renderDrugs() {
@@ -313,7 +416,8 @@
             box.innerHTML = DRUGS.map(d =>
                 `<button class="drug-btn" data-drug="${escapeHtml(d)}">${escapeHtml(d)}</button>`).join("");
             box.querySelectorAll(".drug-btn").forEach(b =>
-                b.addEventListener("click", () => setDrug(b.dataset.drug)));
+                b.addEventListener("click", () =>
+                    setDrug(b.dataset.drug.toLowerCase() === currentDrug.toLowerCase() ? "" : b.dataset.drug)));
             setDrug(currentDrug);
         }
 
@@ -324,13 +428,17 @@
             const message = input.value.trim() || input.placeholder;
             if (!message) return;
 
-            const qa = document.createElement("div");
+            const qa = document.createElement("details");
             qa.className = "qa";
+            qa.open = true;
             qa.innerHTML = `
-                <div class="q">${escapeHtml(message)}</div>
+                <summary class="q"><span class="chev">▶</span><span class="q-text">${escapeHtml(message)}</span><span class="q-chips"></span>${currentDrug ? `<span class="drug-tag">${escapeHtml(currentDrug)}</span>` : ""}</summary>
                 <div class="a loading">Thinking…</div>
+                <div class="sources"></div>
             `;
 
+            // Close every earlier answer; only the newest stays open
+            log.querySelectorAll("details.qa").forEach(d => d.open = false);
             log.insertBefore(qa, log.firstChild);
             while (log.children.length > MAX_HISTORY) {
                 log.removeChild(log.lastChild);
@@ -346,14 +454,14 @@
                     body: JSON.stringify({ message, drug: currentDrug })
                 });
                 const data = await res.json();
-                answerEl.textContent = data.reply || data.error || "No response";
-                answerEl.classList.remove("loading");
-                addTrail(message, data.trail || []);
                 const trail = data.trail || [];
                 if (trail.length) {
                     const last = trail[trail.length - 1];
                     if (last.args && last.args.drug_name) setDrug(last.args.drug_name);
                 }
+                answerEl.innerHTML = highlightDrug(data.reply || data.error || "No response", currentDrug);
+                answerEl.classList.remove("loading");
+                renderSources(qa, trail);
                 input.value = "";
             } catch (err) {
                 answerEl.textContent = "Error: " + err.message;
@@ -369,54 +477,71 @@
             document.querySelectorAll("main button").forEach(b => b.disabled = on);
         }
 
+        // Fills the question box and focuses it, but does not send
+        function fill(q) {
+            const box = document.getElementById("msg");
+            box.value = q;
+            box.focus();
+        }
+
+        // Escape the reply, then wrap the selected drug's name in green
+        function highlightDrug(text, drug) {
+            const safe = escapeHtml(text);
+            if (!drug) return safe;
+            const re = new RegExp("\\b" + escapeHtml(drug).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "gi");
+            return safe.replace(re, m => `<span class="drug-hl">${m}</span>`);
+        }
+
         function ask(q) {
             document.getElementById("msg").value = q;
             send();
         }
 
-        function addTrail(question, trail) {
-            const panel = document.getElementById("trail");
-            panel.querySelectorAll(":scope > details").forEach(d => d.open = false);
-
-            const entry = document.createElement("details");
-            entry.open = true;
-
-            const count = trail.length;
-            const label = count === 0
-                ? "No tool used"
-                : `${count} tool call${count > 1 ? "s" : ""}`;
-            const badge = count === 0 ? "badge-none" : "badge-tools";
-
-            let body;
-            if (count === 0) {
-                body = `<div class="step no-tool">The model answered without calling a tool.</div>`;
-            } else {
-                body = trail.map((step, i) => `
-                    <div class="step">
-                        <div>Step ${i + 1}: <span class="tool-name">${escapeHtml(step.tool)}</span></div>
-                        <div class="searched">Searched for: ${escapeHtml(searchedFor(step.args))}</div>
-                        <div class="readable">${renderResult(step.tool, step.result)}</div>
-                        <details class="raw">
-                            <summary>View raw FDA data</summary>
-                            <div class="json">${escapeHtml(JSON.stringify(step.result, null, 2))}</div>
-                        </details>
-                    </div>
-                `).join("");
+        function renderSources(qa, trail) {
+            const box = qa.querySelector(".sources");
+            if (!trail.length) {
+                box.innerHTML = `<div class="src-row"><span class="src-label">Tools used</span>
+                    <span class="badge-none">None. The model answered without a tool.</span></div>`;
+                return;
             }
-
-            entry.innerHTML = `
-                <summary>${escapeHtml(truncate(question, 40))} · <span class="${badge}">${label}</span></summary>
-                ${body}
-            `;
-
-            panel.insertBefore(entry, panel.firstChild);
-            while (panel.children.length > MAX_HISTORY) {
-                panel.removeChild(panel.lastChild);
+            const titleChips = qa.querySelector(".q-chips");
+            if (titleChips) {
+                titleChips.innerHTML = trail.map(s => {
+                    const name = TOOL_LABELS[s.tool] || s.tool;
+                    return `<span class="chip mini ${s.tool === "search_label_passages" ? "semantic" : toolClass(s.tool)}" title="${escapeHtml(name)}">${escapeHtml(truncate(name, 14))}</span>`;
+                }).join("");
             }
+            const chips = trail.map((s, i) => `
+                <span class="chip ${s.tool === "search_label_passages" ? "semantic" : toolClass(s.tool)}">
+                    ${i + 1}. ${escapeHtml(TOOL_LABELS[s.tool] || s.tool)} · ${escapeHtml(truncate(searchedFor(s.args), 40))}
+                </span>`).join("");
+            const steps = trail.map((s, i) => `
+                <div class="step">
+                    <div>${i + 1}. <span class="tool-name ${toolClass(s.tool)}">${escapeHtml(TOOL_LABELS[s.tool] || s.tool)}</span></div>
+                    <div class="readable">${renderResult(s.tool, s.result)}</div>
+                    <details class="raw"><summary>View raw data</summary>
+                        <div class="json">${escapeHtml(JSON.stringify(s.result, null, 2))}</div>
+                    </details>
+                </div>`).join("");
+            box.innerHTML = `
+                <div class="src-row"><span class="src-label">Tools used</span>${chips}</div>
+                <details class="how"><summary>Show what each source returned</summary>${steps}</details>`;
+        }
+
+        function renderSearch(r) {
+            const list = r.passages || [];
+            if (!list.length) return `<div class="empty">No matching passages.</div>`;
+            return (r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : "") + list.map(p => `
+                <div class="card">
+                    <div class="top"><span>${escapeHtml(p.drug)}</span><span>${escapeHtml(p.section)}</span>
+                        <span>match ${escapeHtml(p.score)}</span></div>
+                    <div>${escapeHtml(truncate(p.text, 300))}</div>
+                </div>`).join("");
         }
 
         function searchedFor(args) {
             if (!args) return "";
+            if (args.question) return args.question;
             if (args.drug_name) return args.drug_name;
             if (args.args) return args.args.join(", ");
             return JSON.stringify(args);
@@ -433,6 +558,8 @@
                 case "get_adverse_events":  return renderAdverse(r);
                 case "get_drug_recalls":    return renderRecalls(r);
                 case "get_drug_approvals":  return renderApprovals(r);
+                case "get_drug_interactions": return renderInteractions(r);
+                case "search_label_passages": return renderSearch(r);
                 default:                    return `<div class="note">No readable view for this tool yet.</div>`;
             }
         }
@@ -461,6 +588,26 @@
                     </div>`)
                 .join("");
             return meta + (body || `<div class="note">The label had none of the usual sections.</div>`);
+        }
+
+        function renderInteractions(r) {
+            const toText = v => Array.isArray(v) ? v.filter(x => typeof x === "string").join("\n\n") : (typeof v === "string" ? v : "");
+            const meta = r.drug ? `<div class="meta"><strong>${escapeHtml(r.drug)}</strong></div>` : "";
+            const note = r.note ? `<div class="note">${escapeHtml(r.note)}</div>` : "";
+            // Known likely field names first
+            for (const key of ["drug_interactions", "interactions", "text"]) {
+                const t = toText(r[key]);
+                if (t) return meta + note + `<div class="section"><div class="section-title">Interactions</div><div class="section-text">${escapeHtml(truncate(t, 1200))}</div></div>`;
+            }
+            // Fallback: show any other text fields we can find
+            const skip = ["drug", "found", "note", "message", "error"];
+            const parts = Object.keys(r).filter(k => !skip.includes(k)).map(k => [k, toText(r[k])]).filter(([, t]) => t);
+            if (!parts.length) return meta + `<div class="empty">No interaction text found. Open the raw data below to see the fields.</div>`;
+            return meta + note + parts.map(([k, t]) => `
+                <div class="section">
+                    <div class="section-title">${escapeHtml(k.replace(/_/g, " "))}</div>
+                    <div class="section-text">${escapeHtml(truncate(t, 1200))}</div>
+                </div>`).join("");
         }
 
         function renderAdverse(r) {

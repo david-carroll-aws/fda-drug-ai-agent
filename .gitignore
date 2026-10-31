@@ -218,3 +218,25 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+# Raw label downloads, all fourteen pieces
+drug-label-*.json
+raw_labels/
+
+# Chunk data, now loaded in MongoDB
+chunks/
+
+# Python junk
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Secrets and local settings
+.env
+
+# Editor and OS files
+.vscode/
+.kiro/
+.DS_Store
