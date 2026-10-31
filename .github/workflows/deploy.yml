@@ -42,4 +42,5 @@ jobs:
             --source . \
             --project "${{ secrets.GCP_PROJECT_ID }}" \
             --region "$REGION" \
-            --allow-unauthenticated
+            --allow-unauthenticated \
+            --clear-base-image
