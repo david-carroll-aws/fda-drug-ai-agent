@@ -1,7 +1,5 @@
 from pymongo import MongoClient
 
-#MONGO_URI = "mongodb+srv://carrolldavidaws_db_user:superMongoDB@fdarag.xy1fbbu.mongodb.net/"
-#col = MongoClient(MONGO_URI)["druglabels"]["chunks"]
 col = MongoClient(os.environ["MONGODB_URI"])["druglabels"]["chunks"]
 
 for name in ["ibuprofen", "metformin", "lisinopril", "phenylephrine"]:
