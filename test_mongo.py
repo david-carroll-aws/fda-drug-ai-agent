@@ -1,7 +1,7 @@
 import certifi
 from pymongo import MongoClient
 
-uri = "mongodb+srv://carrolldavidaws_db_user:superMongoDB@fdarag.xy1fbbu.mongodb.net/python"
+uri = os.environ["MONGODB_URI"]
 
 client = MongoClient(
 uri,
