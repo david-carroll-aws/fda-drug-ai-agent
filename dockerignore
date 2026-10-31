@@ -1,0 +1,10 @@
+.git
+.github
+.env
+__pycache__/
+*.pyc
+venv/
+.venv/
+raw_labels/
+chunks/
+README.md

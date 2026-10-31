@@ -1,0 +1,45 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  REGION: us-east1
+  SERVICE: fda-drug-ai-agent
+
+permissions:
+  contents: read
+  id-token: write   # needed for Workload Identity Federation
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      # TODO: finish Workload Identity Federation setup in Google Cloud,
+      # then add these two repository secrets in GitHub:
+      #   GCP_WORKLOAD_IDENTITY_PROVIDER
+      #   GCP_SERVICE_ACCOUNT
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      # TODO: add GCP_PROJECT_ID as a repository secret.
+      # TODO: move OPENFDA_API_KEY and MONGO_URL into Google Secret Manager
+      # and swap --set-env-vars for --set-secrets.
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy "$SERVICE" \
+            --source . \
+            --project "${{ secrets.GCP_PROJECT_ID }}" \
+            --region "$REGION" \
+            --allow-unauthenticated
