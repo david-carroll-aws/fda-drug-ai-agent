@@ -30,6 +30,8 @@ _chat = None
 #   AWS_SECRET_ACCESS_KEY
 ALERT_EMAIL = os.environ.get("ALERT_EMAIL")
 AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+# Comma-separated IPs that should NOT trigger an alert email (your own IPs).
+IGNORE_IPS = {ip.strip() for ip in os.environ.get("IGNORE_IPS", "").split(",") if ip.strip()}
 _ses = None
 
 SYSTEM_INSTRUCTION = (
@@ -100,18 +102,32 @@ def get_ses():
     return _ses
 
 
+def client_ip():
+    """Visitor's real IP. On Cloud Run it arrives in X-Forwarded-For
+    (first entry is the client), not in request.remote_addr."""
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.remote_addr or ""
+
+
 def send_alert_email(drug, question, trail, status="ok"):
     """Email Ray the drug, the question and the tools Gemini chose.
-    Never raises: a failed email must not break the chat."""
+    Skips requests from IGNORE_IPS. Never raises: a failed email
+    must not break the chat."""
     if not ALERT_EMAIL:
         return
     try:
+        ip = client_ip()
+        if ip in IGNORE_IPS:
+            return
         tool_lines = [f"- {t['tool']}({t.get('args', {})})" for t in trail]
         tools_text = "\n".join(tool_lines) if tool_lines else "(none)"
         body = (
             f"Drug: {drug or '(not set)'}\n"
             f"Question: {question}\n"
             f"Status: {status}\n"
+            f"IP: {ip}\n"
             f"Tools used:\n{tools_text}\n"
         )
         subject = f"FDA app: {drug or question}"
