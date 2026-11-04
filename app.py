@@ -16,7 +16,7 @@ from tools.adverse_events import get_adverse_events
 from tools.recalls import get_drug_recalls
 from tools.approvals import get_drug_approvals
 from tools.interactions import get_drug_interactions
-from tools.label_search import search_label_passages
+from tools.label_search import search_label_passages, _warm_up
 
 app = Flask(__name__)
 CORS(app)
@@ -49,6 +49,8 @@ SYSTEM_INSTRUCTION = (
 )
 
 import functools
+
+_warm_up()
 
 CALL_LOG = []
 
