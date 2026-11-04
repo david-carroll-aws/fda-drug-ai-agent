@@ -1,4 +1,5 @@
 import os
+import time
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -57,7 +58,9 @@ def logged(fn):
     def wrapper(*args, **kwargs):
         entry = {"tool": fn.__name__, "args": kwargs or {"args": list(args)}}
         CALL_LOG.append(entry)
+        t0 = time.time()
         result = fn(*args, **kwargs)
+        print(f"TIMING tool {fn.__name__} took {time.time() - t0:.2f}s", flush=True)
         entry["result"] = result
         return result
     return wrapper
@@ -177,9 +180,13 @@ def chat_endpoint():
         if drug:
             message = (f"(Drug under discussion: {drug}. If this question is a "
             f"follow-up without a drug name, it refers to this drug.)\n{message}")
+        t0 = time.time()
         response = get_chat().send_message(message)
+        print(f"TIMING send_message total took {time.time() - t0:.2f}s", flush=True)
         trail = list(CALL_LOG)
+        t1 = time.time()
         send_alert_email(drug, question, trail)
+        print(f"TIMING alert email took {time.time() - t1:.2f}s", flush=True)
         return jsonify(reply=response.text, trail=trail)
     except Exception as e:
         msg = str(e)
