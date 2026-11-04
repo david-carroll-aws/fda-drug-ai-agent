@@ -7,3 +7,4 @@ python-dotenv
 pymongo
 sentence-transformers
 certifi
+boto3

@@ -3,6 +3,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+import boto3
+from botocore.config import Config
 from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from google import genai
@@ -20,6 +22,15 @@ CORS(app)
 
 _client = None
 _chat = None
+
+# Alert email settings (set these as Cloud Run environment variables / secrets):
+#   ALERT_EMAIL            verified SES address, used as both sender and recipient
+#   AWS_REGION             defaults to us-east-1
+#   AWS_ACCESS_KEY_ID      boto3 reads these two automatically
+#   AWS_SECRET_ACCESS_KEY
+ALERT_EMAIL = os.environ.get("ALERT_EMAIL")
+AWS_REGION = os.environ.get("AWS_REGION", "us-east-1")
+_ses = None
 
 SYSTEM_INSTRUCTION = (
     "You are an FDA drug information assistant. "
@@ -77,6 +88,46 @@ def get_chat():
     return _chat
 
 
+def get_ses():
+    global _ses
+    if _ses is None:
+        _ses = boto3.client(
+            "ses",
+            region_name=AWS_REGION,
+            # Short timeouts so a slow SES call can never hang the chat.
+            config=Config(connect_timeout=3, read_timeout=3, retries={"max_attempts": 1}),
+        )
+    return _ses
+
+
+def send_alert_email(drug, question, trail, status="ok"):
+    """Email Ray the drug, the question and the tools Gemini chose.
+    Never raises: a failed email must not break the chat."""
+    if not ALERT_EMAIL:
+        return
+    try:
+        tool_lines = [f"- {t['tool']}({t.get('args', {})})" for t in trail]
+        tools_text = "\n".join(tool_lines) if tool_lines else "(none)"
+        body = (
+            f"Drug: {drug or '(not set)'}\n"
+            f"Question: {question}\n"
+            f"Status: {status}\n"
+            f"Tools used:\n{tools_text}\n"
+        )
+        subject = f"FDA app: {drug or question}"
+        subject = " ".join(subject.split())[:120]  # one line, trimmed
+        get_ses().send_email(
+            Source=ALERT_EMAIL,
+            Destination={"ToAddresses": [ALERT_EMAIL]},
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
+            },
+        )
+    except Exception as e:
+        print(f"alert email failed: {e}", flush=True)
+
+
 def tool_trail(response):
     """Pull out which tools the model called and with what arguments."""
     trail = []
@@ -101,23 +152,29 @@ def chat_endpoint():
     message = (body.get("message") or "").strip()
     if not message:
         return jsonify(error="empty message"), 400
+    question = message          # keep the user's original wording for the email
+    drug = body.get("drug")
     try:
         CALL_LOG.clear()
         global _chat
         _chat = None
-        drug = request.json.get("drug")
         if drug:
             message = (f"(Drug under discussion: {drug}. If this question is a "
             f"follow-up without a drug name, it refers to this drug.)\n{message}")
         response = get_chat().send_message(message)
-        return jsonify(reply=response.text, trail=list(CALL_LOG))
+        trail = list(CALL_LOG)
+        send_alert_email(drug, question, trail)
+        return jsonify(reply=response.text, trail=trail)
     except Exception as e:
         msg = str(e)
+        trail = list(CALL_LOG)
         if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+            send_alert_email(drug, question, trail, status="rate limited (429)")
             return jsonify(
                 reply="The AI is getting a lot of requests right now. Please wait a minute and try again.",
-                trail=list(CALL_LOG),
+                trail=trail,
             ), 429
+        send_alert_email(drug, question, trail, status="error")
         return jsonify(error="Something went wrong. Please try again."), 500
 
 
