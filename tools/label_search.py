@@ -107,3 +107,6 @@ def _warm_up():
         print(f"TIMING warm-up mongo ready in {time.time() - t1:.2f}s", flush=True)
     except Exception as e:
         print(f"warm-up mongo failed: {e}", flush=True)
+
+
+_warm_up()        
