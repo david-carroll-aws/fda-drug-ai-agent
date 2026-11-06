@@ -50,8 +50,6 @@ SYSTEM_INSTRUCTION = (
 
 import functools
 
-_warm_up()
-
 CALL_LOG = []
 
 def logged(fn):
