@@ -109,4 +109,4 @@ def _warm_up():
         print(f"warm-up mongo failed: {e}", flush=True)
 
 
-_warm_up()        
+##_warm_up()        
